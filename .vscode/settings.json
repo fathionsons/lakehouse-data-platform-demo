@@ -3,7 +3,8 @@
   "python.analysis.extraPaths": [
     "${workspaceFolder}/lakehouse_demo/src"
   ],
-  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.typeCheckingMode": "off",
+  "python.analysis.diagnosticMode": "workspace",
   "cSpell.words": [
     "lakehouse"
   ]

@@ -30,7 +30,8 @@ pip-wheel-metadata/
 
 # IDE / OS artifacts
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .DS_Store
 Thumbs.db
 
