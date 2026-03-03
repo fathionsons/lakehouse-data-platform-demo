@@ -52,11 +52,15 @@ lakehouse_demo/
    ```bash
    make run
    ```
-5. Run quality checks:
+5. Launch dashboard:
+   ```bash
+   make dashboard
+   ```
+6. Run quality checks:
    ```bash
    make test
    ```
-6. Run lint + format checks:
+7. Run lint + format checks:
    ```bash
    make lint
    ```
@@ -68,8 +72,22 @@ python -m lakehouse ingest
 python -m lakehouse silver
 python -m lakehouse gold
 python -m lakehouse mart
+python -m lakehouse dashboard
 python -m lakehouse all
 ```
+
+Dashboard command:
+
+```bash
+python -m streamlit run dashboard/app.py
+```
+
+The dashboard consumes generated marts in `data/marts/` and provides:
+- KPI tiles for filtered business metrics
+- Average rating by industry chart
+- Monthly premium trend by city chart
+- Top companies table with CSV export
+- Embedded markdown summary from `reports/kpi_summary.md`
 
 ## Data Model (Kimball)
 

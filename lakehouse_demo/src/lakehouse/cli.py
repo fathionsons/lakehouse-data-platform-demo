@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Callable
 
-from lakehouse import gold, ingest, mart, silver
+from lakehouse import dashboard, gold, ingest, mart, silver
 
 
 def run_all() -> None:
@@ -20,7 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "command",
-        choices=["ingest", "silver", "gold", "mart", "all"],
+        choices=["ingest", "silver", "gold", "mart", "dashboard", "all"],
         help="Pipeline stage to run.",
     )
     return parser
@@ -35,6 +35,7 @@ def main(argv: list[str] | None = None) -> int:
         "silver": silver.run,
         "gold": gold.run,
         "mart": mart.run,
+        "dashboard": dashboard.run,
         "all": run_all,
     }
     commands[args.command]()

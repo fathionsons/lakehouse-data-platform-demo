@@ -1,10 +1,10 @@
 PYTHON ?= python
 
-.PHONY: setup run ingest silver gold mart test lint
+.PHONY: setup run ingest silver gold mart dashboard test lint
 
 setup:
 	$(PYTHON) -m pip install --upgrade pip
-	$(PYTHON) -m pip install -e .[dev]
+	$(PYTHON) -m pip install -e .[dev,viz]
 
 run:
 	$(PYTHON) -m lakehouse all
@@ -20,6 +20,9 @@ gold:
 
 mart:
 	$(PYTHON) -m lakehouse mart
+
+dashboard:
+	$(PYTHON) -m streamlit run dashboard/app.py
 
 test:
 	$(PYTHON) -m pytest -q
