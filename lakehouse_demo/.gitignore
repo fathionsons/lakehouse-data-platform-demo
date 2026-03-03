@@ -1,0 +1,49 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Environment files
+.env
+.env.*
+
+# IDE / OS artifacts
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Runtime data outputs (keep folder structure via .gitkeep)
+data/bronze/*
+data/silver/*
+data/gold/*
+data/marts/*
+!data/bronze/.gitkeep
+!data/silver/.gitkeep
+!data/gold/.gitkeep
+!data/marts/.gitkeep
+
+# Generated reports (keep folder in git)
+reports/*
+!reports/.gitkeep
