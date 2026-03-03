@@ -106,3 +106,6 @@ See [docs/star_schema.md](docs/star_schema.md) and [docs/kimball_notes.md](docs/
 - Engineering quality: automated tests, linting, and CI represent Azure DevOps style gated delivery.
 - Reproducibility: local-first and deterministic runs for onboarding, demos, and regression testing.
 
+
+<img width="1807" height="731" alt="image" src="https://github.com/user-attachments/assets/1523d9d2-cd03-4e58-8b97-4a96f826ee56" />
+
