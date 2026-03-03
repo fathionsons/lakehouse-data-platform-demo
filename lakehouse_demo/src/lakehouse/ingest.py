@@ -97,9 +97,24 @@ def generate_companies(n_companies: int = N_COMPANIES, seed: int = RANDOM_SEED) 
         }
     )
 
-    duplicates = base_df.sample(n=25, random_state=seed).copy()
-    duplicates["created_at"] = duplicates["created_at"] + pd.to_timedelta(1, unit="D")
-    companies_raw = pd.concat([base_df, duplicates], ignore_index=True)
+    # Simulate operational updates that require SCD2 handling in Gold.
+    updates = base_df.sample(n=220, random_state=seed + 100).copy()
+    update_mask = np.arange(len(updates)) % 2 == 0
+    city_rotation = {city: CITIES[(idx + 1) % len(CITIES)] for idx, city in enumerate(CITIES)}
+    industry_rotation = {
+        industry: INDUSTRIES[(idx + 1) % len(INDUSTRIES)] for idx, industry in enumerate(INDUSTRIES)
+    }
+    updates.loc[update_mask, "city"] = updates.loc[update_mask, "city"].map(city_rotation)
+    updates.loc[~update_mask, "industry"] = updates.loc[~update_mask, "industry"].map(
+        industry_rotation
+    )
+    updates["created_at"] = updates["created_at"] + pd.to_timedelta(
+        rng.integers(45, 420, size=len(updates)), unit="D"
+    )
+    updates["created_at"] = updates["created_at"].clip(upper=pd.Timestamp("2026-01-15"))
+
+    exact_duplicates = base_df.sample(n=25, random_state=seed).copy()
+    companies_raw = pd.concat([base_df, updates, exact_duplicates], ignore_index=True)
 
     null_city_index = companies_raw.sample(n=20, random_state=seed + 1).index
     companies_raw.loc[null_city_index, "city"] = None

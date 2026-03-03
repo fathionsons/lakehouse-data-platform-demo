@@ -31,11 +31,52 @@ def build_dim_date(reviews: pd.DataFrame, policies: pd.DataFrame) -> pd.DataFram
     return dim_date[["date_key", "date", "year", "month", "day", "week", "weekday_name"]]
 
 
-def build_dim_company(companies: pd.DataFrame) -> pd.DataFrame:
-    dim_company = companies[["company_id", "name", "city", "industry"]].copy()
-    dim_company = dim_company.sort_values("company_id").reset_index(drop=True)
-    dim_company["company_key"] = np.arange(1, len(dim_company) + 1, dtype=np.int32)
-    return dim_company[["company_key", "company_id", "name", "city", "industry"]]
+def build_dim_company(
+    companies: pd.DataFrame, min_valid_from: pd.Timestamp | None = None
+) -> pd.DataFrame:
+    history = companies[["company_id", "name", "city", "industry", "created_at"]].copy()
+    history["created_at"] = pd.to_datetime(history["created_at"], errors="coerce").dt.normalize()
+    history = history.dropna(subset=["company_id", "created_at"])
+    history = history.sort_values(["company_id", "created_at"], kind="mergesort")
+    history = history.drop_duplicates(
+        subset=["company_id", "created_at", "name", "city", "industry"],
+        keep="last",
+    )
+
+    scd_columns = ["name", "city", "industry"]
+    previous_values = history.groupby("company_id")[scd_columns].shift()
+    first_record = history["company_id"].ne(history["company_id"].shift())
+    changed_values = history[scd_columns].ne(previous_values).any(axis=1)
+
+    scd2 = history[first_record | changed_values].copy()
+    scd2["valid_from"] = scd2["created_at"]
+
+    if min_valid_from is not None and not pd.isna(min_valid_from):
+        floor_date = pd.Timestamp(min_valid_from).normalize()
+        first_version = scd2.groupby("company_id").cumcount().eq(0)
+        scd2.loc[first_version, "valid_from"] = scd2.loc[first_version, "valid_from"].clip(
+            upper=floor_date
+        )
+
+    scd2 = scd2.sort_values(["company_id", "valid_from"], kind="mergesort")
+    scd2["next_valid_from"] = scd2.groupby("company_id")["valid_from"].shift(-1)
+    scd2["valid_to"] = scd2["next_valid_from"] - pd.to_timedelta(1, unit="D")
+    scd2["is_current"] = scd2["next_valid_from"].isna()
+    scd2 = scd2.drop(columns=["created_at", "next_valid_from"]).reset_index(drop=True)
+    scd2["company_key"] = np.arange(1, len(scd2) + 1, dtype=np.int32)
+
+    return scd2[
+        [
+            "company_key",
+            "company_id",
+            "name",
+            "city",
+            "industry",
+            "valid_from",
+            "valid_to",
+            "is_current",
+        ]
+    ]
 
 
 def build_dim_channel(reviews: pd.DataFrame) -> pd.DataFrame:
@@ -52,10 +93,34 @@ def build_dim_policy_status(policies: pd.DataFrame) -> pd.DataFrame:
     return dim_status[["status_key", "status"]]
 
 
+def _attach_company_key_by_date(
+    events: pd.DataFrame,
+    dim_company: pd.DataFrame,
+    event_id_col: str,
+    event_date_col: str,
+) -> pd.DataFrame:
+    company_windows = dim_company[["company_key", "company_id", "valid_from", "valid_to"]]
+    merged = events.merge(company_windows, on="company_id", how="left")
+    event_dates = pd.to_datetime(merged[event_date_col], errors="coerce").dt.normalize()
+    in_window = (event_dates >= merged["valid_from"]) & (
+        merged["valid_to"].isna() | (event_dates <= merged["valid_to"])
+    )
+
+    matched = merged[in_window].copy()
+    matched = matched.sort_values([event_id_col, "valid_from"], kind="mergesort")
+    matched = matched.drop_duplicates(subset=[event_id_col], keep="last")
+    return matched
+
+
 def build_fact_review(
     reviews: pd.DataFrame, dim_company: pd.DataFrame, dim_channel: pd.DataFrame
 ) -> pd.DataFrame:
-    fact = reviews.merge(dim_company[["company_id", "company_key"]], on="company_id", how="left")
+    fact = _attach_company_key_by_date(
+        reviews,
+        dim_company,
+        event_id_col="event_id",
+        event_date_col="review_date",
+    )
     fact = fact.merge(dim_channel, left_on="channel", right_on="channel_name", how="left")
     fact["date_key"] = date_to_key(fact["review_date"])
     fact["review_key"] = np.arange(1, len(fact) + 1, dtype=np.int64)
@@ -72,7 +137,12 @@ def build_fact_review(
 def build_fact_policy_premium(
     policies: pd.DataFrame, dim_company: pd.DataFrame, dim_status: pd.DataFrame
 ) -> pd.DataFrame:
-    fact = policies.merge(dim_company[["company_id", "company_key"]], on="company_id", how="left")
+    fact = _attach_company_key_by_date(
+        policies,
+        dim_company,
+        event_id_col="policy_id",
+        event_date_col="start_date",
+    )
     fact = fact.merge(dim_status, on="status", how="left")
     fact["date_key"] = date_to_key(fact["start_date"])
 
@@ -113,7 +183,11 @@ def run() -> None:
     reviews = pd.read_parquet(curated_paths["reviews"])
     policies = pd.read_parquet(curated_paths["policies"])
 
-    dim_company = build_dim_company(companies)
+    min_fact_date = pd.concat(
+        [reviews["review_date"], policies["start_date"]], ignore_index=True
+    ).min()
+
+    dim_company = build_dim_company(companies, min_valid_from=min_fact_date)
     dim_channel = build_dim_channel(reviews)
     dim_status = build_dim_policy_status(policies)
     dim_date = build_dim_date(reviews, policies)

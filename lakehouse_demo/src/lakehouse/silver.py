@@ -19,8 +19,11 @@ def clean_companies(df: pd.DataFrame) -> pd.DataFrame:
     ).dt.tz_localize(None)
 
     clean = clean[clean["company_id"].str.fullmatch(r"C\d{6}", na=False)].copy()
+    clean = clean.dropna(subset=["created_at"])
     clean = clean.sort_values(["company_id", "created_at"], kind="mergesort")
-    clean = clean.drop_duplicates(subset=["company_id"], keep="last")
+    clean = clean.drop_duplicates(
+        subset=["company_id", "name", "industry", "city", "created_at"], keep="last"
+    )
     return clean[["company_id", "name", "industry", "city", "created_at"]].reset_index(drop=True)
 
 

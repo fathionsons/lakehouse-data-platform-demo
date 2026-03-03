@@ -16,10 +16,13 @@ erDiagram
 
     DIM_COMPANY {
       INT company_key PK
-      STRING company_id UK
+      STRING company_id
       STRING name
       STRING city
       STRING industry
+      DATE valid_from
+      DATE valid_to
+      BOOLEAN is_current
     }
 
     DIM_CHANNEL {

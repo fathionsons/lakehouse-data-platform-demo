@@ -92,7 +92,8 @@ Fact grains:
 
 Dimension highlights:
 - `dim_date`: integer `date_key` (`YYYYMMDD`) plus calendar attributes.
-- `dim_company`: surrogate key + natural business key (`company_id`).
+- `dim_company`: Type 2 SCD with surrogate key + natural key (`company_id`) and
+  `valid_from` / `valid_to` / `is_current`.
 - `dim_channel`, `dim_policy_status`: low-cardinality conformed lookup dimensions.
 
 See [docs/star_schema.md](docs/star_schema.md) and [docs/kimball_notes.md](docs/kimball_notes.md).
@@ -105,4 +106,3 @@ See [docs/star_schema.md](docs/star_schema.md) and [docs/kimball_notes.md](docs/
 - Analytics readiness: curated Gold model and KPI marts are directly consumable by BI tools.
 - Engineering quality: automated tests, linting, and CI represent Azure DevOps style gated delivery.
 - Reproducibility: local-first and deterministic runs for onboarding, demos, and regression testing.
-

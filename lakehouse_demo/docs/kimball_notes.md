@@ -23,8 +23,10 @@
 
 ## Slowly Changing Dimensions (SCD) Concept
 
-- This demo implements a Type 1 style dimension overwrite for simplicity.
-- In production:
-  - Type 1 updates overwrite attribute history.
-  - Type 2 keeps history with effective dates and current flags.
-- `dim_company` is the most likely candidate for future Type 2 handling if company attributes evolve.
+- This demo implements SCD Type 2 for `dim_company`.
+- Implemented columns:
+  - `valid_from`: start date when the version became active
+  - `valid_to`: end date of the version (null for current row)
+  - `is_current`: boolean flag for the active record
+- Facts resolve `company_key` using both `company_id` and event date, so historical
+  reporting uses the correct company version at that point in time.

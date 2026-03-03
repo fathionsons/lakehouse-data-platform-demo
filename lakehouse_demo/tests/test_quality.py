@@ -30,7 +30,7 @@ def test_row_counts_are_reasonable(pipeline_root: Path) -> None:
     fact_review = _read_gold(pipeline_root, "fact_review")
     fact_policy = _read_gold(pipeline_root, "fact_policy_premium")
 
-    assert len(dim_company) == 2_000
+    assert len(dim_company) > 2_000
     assert 49_000 <= len(fact_review) <= 50_250
     assert 9_600 <= len(fact_policy) <= 10_100
 
@@ -50,7 +50,17 @@ def test_dimension_keys_are_unique(pipeline_root: Path) -> None:
     dim_date = _read_gold(pipeline_root, "dim_date")
 
     assert dim_company["company_key"].is_unique
-    assert dim_company["company_id"].is_unique
+    assert dim_company["valid_from"].notna().all()
+    assert dim_company.groupby("company_id")["is_current"].sum().eq(1).all()
+    assert dim_company[dim_company["is_current"]]["company_id"].is_unique
+    assert len(dim_company[dim_company["is_current"]]) == 2_000
+
+    company_windows = dim_company.sort_values(["company_id", "valid_from"], kind="mergesort").copy()
+    next_valid_from = company_windows.groupby("company_id")["valid_from"].shift(-1)
+    not_last = next_valid_from.notna()
+    day_gap = (next_valid_from[not_last] - company_windows.loc[not_last, "valid_to"]).dt.days
+    assert day_gap.eq(1).all()
+
     assert dim_channel["channel_key"].is_unique
     assert dim_channel["channel_name"].is_unique
     assert dim_status["status_key"].is_unique
