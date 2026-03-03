@@ -1,4 +1,9 @@
 {
+  "python.defaultInterpreterPath": "${workspaceFolder}/lakehouse_demo/.venv/Scripts/python.exe",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/lakehouse_demo/src"
+  ],
+  "python.analysis.typeCheckingMode": "basic",
   "cSpell.words": [
     "lakehouse"
   ]
